@@ -37,17 +37,25 @@ def simulation(time_unit, vehicles_to_insert, out):
     graph.addStreet(19, 3, 4, 651.0, 13.9, 2, "")
 
     # Create traffic lights on nodes 1..4 and set cycles
-    tl1 = graph.makeTrafficLight(1, 132)
-    tl1.setCycle(1, mobility.Direction.ANY, mobility.TrafficLightCycle(62, 0))
+    graph.makeTrafficLight(1)
+    tl1 = graph.node(1)
+    tl1.addPhase(mobility.TrafficLightPhase(62, {1: {mobility.Direction.ANY}}))
+    tl1.addPhase(mobility.TrafficLightPhase(70))
 
-    tl2 = graph.makeTrafficLight(2, 141)
-    tl2.setCycle(7, mobility.Direction.ANY, mobility.TrafficLightCycle(72, 0))
+    graph.makeTrafficLight(2)
+    tl2 = graph.node(2)
+    tl2.addPhase(mobility.TrafficLightPhase(72, {7: {mobility.Direction.ANY}}))
+    tl2.addPhase(mobility.TrafficLightPhase(69))
 
-    tl3 = graph.makeTrafficLight(3, 138)
-    tl3.setCycle(13, mobility.Direction.ANY, mobility.TrafficLightCycle(88, 0))
+    graph.makeTrafficLight(3)
+    tl3 = graph.node(3)
+    tl3.addPhase(mobility.TrafficLightPhase(88, {13: {mobility.Direction.ANY}}))
+    tl3.addPhase(mobility.TrafficLightPhase(50))
 
-    tl4 = graph.makeTrafficLight(4, 131)
-    tl4.setCycle(19, mobility.Direction.ANY, mobility.TrafficLightCycle(81, 0))
+    graph.makeTrafficLight(4)
+    tl4 = graph.node(4)
+    tl4.addPhase(mobility.TrafficLightPhase(81, {19: {mobility.Direction.ANY}}))
+    tl4.addPhase(mobility.TrafficLightPhase(50))
 
     graph.adjustNodeCapacities()
     graph.addCoil(19)
