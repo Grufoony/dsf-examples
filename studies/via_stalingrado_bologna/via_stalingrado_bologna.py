@@ -1,4 +1,10 @@
-"""Python port of examples/stalingrado.cpp using dsf Python bindings."""
+"""
+Script to simulate the traffic flow at Via Stalingrado, Bologna (Italy) using the DSF library.
+The script reads an input file specifying the time unit and the number of vehicles to insert at each time step, runs a traffic simulation, and outputs the flow data to a CSV file.
+Finally, it generates a plot comparing the input and output flow over time.
+
+The goal is to show the effect of traffic lights on the vehicle flow.
+"""
 
 from pathlib import Path
 
