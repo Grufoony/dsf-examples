@@ -12,21 +12,23 @@ probabilistically, and writes periodic input/output flow to CSV files.
 from pathlib import Path
 import argparse
 import random
-import math
-import sys
+import numpy as np
 
 from dsf import mobility
 
 
-MAX_TIME = int(75e3)
+MAX_TIME = int(75e3 * 4)
+ROAD_LENGTH = 6e2
 
 
 def main():
     parser = argparse.ArgumentParser(description="Traffic lights chain simulation")
     parser.add_argument("N_MAX", type=int)
     parser.add_argument("SEED", type=int)
-    parser.add_argument("--alpha", type=float, default=0.1)
+    parser.add_argument("--alpha", type=float, default=0.01)
     args = parser.parse_args()
+
+    np.random.seed(args.SEED)
 
     for N_TRAFFICLIGHTS in range(1, args.N_MAX + 1):
         alpha = args.alpha
@@ -45,7 +47,8 @@ def main():
 
         # create N_TRAFFICLIGHTS+1 streets connecting nodes 0..N_TRAFFICLIGHTS
         for sid in range(N_TRAFFICLIGHTS + 1):
-            graph.addStreet(sid, sid, sid + 1, 600.0, 13.9, 2, "")
+            graph.addStreet(sid, sid, sid + 1, ROAD_LENGTH, 13.9, 2, "")
+            graph.addCoil(sid)
 
         # create traffic lights on nodes 1..N_TRAFFICLIGHTS
         for tid in range(N_TRAFFICLIGHTS):
@@ -76,42 +79,53 @@ def main():
                 try:
                     p = Path(f"./traffic_light_settings_{args.SEED}.log")
                     with p.open("a") as logf:
-                        logf.write(str(tl) + "\n")
+                        logf.write(f"{tl}\n")
                 except Exception:
                     pass
 
         graph.adjustNodeCapacities()
-        graph.addCoil(N_TRAFFICLIGHTS)
-        output_coil = graph.edge(N_TRAFFICLIGHTS)
+        output_road = graph.edge(N_TRAFFICLIGHTS)
 
         # instantiate dynamics
         dynamics = mobility.Dynamics(graph, False, args.SEED)
+        graph = dynamics.graph()
         dynamics.setODs([(0, N_TRAFFICLIGHTS + 1, 1.0)])
         dynamics.updatePaths()
 
         out_path = Path(f"./{args.SEED}_traffic_light_output_{N_TRAFFICLIGHTS}.csv")
         with out_path.open("w") as ofs:
-            ofs.write("time;input_flow;output_flow\n")
+            ofs.write("time;input_flow;output_flow")
+            for idx in range(N_TRAFFICLIGHTS + 1):
+                ofs.write(f";queue_{idx};density_{idx};counts_{idx}")
+            ofs.write("\n")
             totAgents = 0
 
             for progress in range(0, MAX_TIME + 1):
                 if progress > 0 and progress % 300 == 0:
-                    ofs.write(f"{progress};{totAgents};{output_coil.counts()}\n")
+                    ofs.write(f"{progress};{totAgents};{output_road.counts()}")
+                    for idx in range(N_TRAFFICLIGHTS + 1):
+                        road = graph.edge(idx)
+                        ofs.write(f";{road.nExitingAgents()};{road.density(True)};{road.counts()}")
+                        road.resetCounter()
+                    ofs.write("\n")
                     totAgents = 0
-                    output_coil.resetCounter()
+                    output_road.resetCounter()
 
                 # probabilistic insertion
-                decimal_part, integer_part = math.modf(alpha)
-                if integer_part > 0:
-                    dynamics.addAgents(int(integer_part), mobility.AgentInsertionMethod.ODS)
-                    totAgents += int(integer_part)
-                if rng.random() < decimal_part:
-                    dynamics.addAgents(1, mobility.AgentInsertionMethod.ODS)
-                    totAgents += 1
+                # decimal_part, integer_part = math.modf(alpha)
+                # if integer_part > 0:
+                #     dynamics.addAgents(int(integer_part), mobility.AgentInsertionMethod.ODS)
+                #     totAgents += int(integer_part)
+                # if rng.random() < decimal_part:
+                #     dynamics.addAgents(1, mobility.AgentInsertionMethod.ODS)
+                #     totAgents += 1
+                agents_to_add = np.random.poisson(alpha)
+                dynamics.addAgents(agents_to_add, mobility.AgentInsertionMethod.ODS)
+                totAgents += agents_to_add
 
-                if progress > 0 and progress % 5000 == 0:
-                    alpha += 0.1
-                    print(f"Time: {progress}, alpha: {alpha}")
+                if progress > 0 and progress % 2500 == 0:
+                    alpha += 0.01
+                    print(f"Time: {progress}, alpha: {alpha:.2f}")
 
                 # advance the simulation
                 dynamics.evolve()
