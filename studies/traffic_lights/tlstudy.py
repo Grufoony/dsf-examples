@@ -34,12 +34,8 @@ def main():
         alpha = args.alpha
         print(f"Simulating with {N_TRAFFICLIGHTS} traffic lights...")
 
-        # Use a deterministic RNG seeded the same way as the C++ example
-        rng = random.Random()
-        rng.seed(args.SEED)
-
         # sample a (single) phase length for this run
-        length = rng.gauss(60.0, 10.0)
+        length = np.random.normal(60, 10)
         phase_max = max(0, int(length * 2))
 
         # Build network
@@ -47,7 +43,7 @@ def main():
 
         # create N_TRAFFICLIGHTS+1 streets connecting nodes 0..N_TRAFFICLIGHTS
         for sid in range(N_TRAFFICLIGHTS + 1):
-            graph.addStreet(sid, sid, sid + 1, ROAD_LENGTH, 13.9, 2, "")
+            graph.addStreet(sid, sid, sid + 1, ROAD_LENGTH, 13.89, 2, "")
             graph.addCoil(sid)
 
         # create traffic lights on nodes 1..N_TRAFFICLIGHTS
@@ -67,7 +63,7 @@ def main():
             tl.addPhase(mobility.TrafficLightPhase(int(length)))
 
             # randomize starting offset if available
-            phase_offset = rng.randint(0, phase_max) if phase_max > 0 else 0
+            phase_offset = np.random.randint(0, phase_max) if phase_max > 0 else 0
             if hasattr(tl, "advanceBy"):
                 try:
                     tl.advanceBy(phase_offset)
@@ -84,7 +80,7 @@ def main():
                     pass
 
         graph.adjustNodeCapacities()
-        output_road = graph.edge(N_TRAFFICLIGHTS)
+        output_road = graph.edge(N_TRAFFICLIGHTS-1)
 
         # instantiate dynamics
         dynamics = mobility.Dynamics(graph, False, args.SEED)
@@ -101,7 +97,7 @@ def main():
             totAgents = 0
 
             for progress in range(0, MAX_TIME + 1):
-                if progress > 0 and progress % 300 == 0:
+                if progress > 0 and progress % 900 == 0:
                     ofs.write(f"{progress};{totAgents};{output_road.counts()}")
                     for idx in range(N_TRAFFICLIGHTS + 1):
                         road = graph.edge(idx)
@@ -116,7 +112,7 @@ def main():
                 # if integer_part > 0:
                 #     dynamics.addAgents(int(integer_part), mobility.AgentInsertionMethod.ODS)
                 #     totAgents += int(integer_part)
-                # if rng.random() < decimal_part:
+                # if np.random.random() < decimal_part:
                 #     dynamics.addAgents(1, mobility.AgentInsertionMethod.ODS)
                 #     totAgents += 1
                 agents_to_add = np.random.poisson(alpha)
