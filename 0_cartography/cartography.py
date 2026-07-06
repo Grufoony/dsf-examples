@@ -15,7 +15,9 @@ OUTPUT_DIR = Path("output")
 
 def main(city: str):
     logging.info(f"Generating cartography for {city}...")
-    G, edges, nodes = cartography.get_cartography(city, scc=True)
+    G, edges, nodes = cartography.get_cartography(
+        city, scc=True, consolidate_intersections=False
+    )
 
     map = cartography.to_folium_map(G)
 
