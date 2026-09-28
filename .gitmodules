@@ -1,0 +1,4 @@
+[submodule "toy_models/TransportationNetworks"]
+	path = toy_models/TransportationNetworks
+	url = https://github.com/bstabler/TransportationNetworks.git
+	shallow = true
