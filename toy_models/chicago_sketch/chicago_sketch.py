@@ -1,10 +1,12 @@
 """
-Script to simulate the Sioux Falls benchmark network using the DSF library.
+Script to simulate the Chicago sketch benchmark network using the DSF library.
 The script converts the TNTP files of the TransportationNetworks repository into DSF inputs,
 runs a traffic simulation fed only by the origin-destination matrix, with agents routed on the
 current travel times, and compares the simulated link flows with the user-equilibrium ones.
 
 Nothing is calibrated: the goal is to see how close the flows get with just ODs and travel times.
+The benchmark equilibrium uses a generalized cost that adds 0.04 minutes per mile to the travel
+times, while DSF routes on travel times only.
 """
 
 from pathlib import Path
@@ -17,31 +19,36 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import utils
 
 HERE = Path(__file__).resolve().parent
-INPUT_DIR = HERE / "../TransportationNetworks/SiouxFalls"
+INPUT_DIR = HERE / "../TransportationNetworks/Chicago-Sketch"
 OUTPUT_DIR = HERE / "output"
-NAME = "sioux_falls"
-TITLE = "Sioux Falls"
+NAME = "chicago_sketch"
+TITLE = "Chicago sketch"
 
-# Link lengths are equal to free-flow times: reading them as miles and minutes gives 60 mph
 LENGTH_UNIT = utils.MILE
-# Node coordinates are longitudes and latitudes
-NODES_CRS = "EPSG:4326"
-CENTROID_OFFSET = 0.002  # degrees
-MAP_LINK_OFFSET = 150.0  # Web Mercator meters
+# Node coordinates are in the Illinois State Plane East system (NAD27), in feet
+NODES_CRS = "EPSG:26771"
+CENTROID_OFFSET = 500.0  # feet
+MAP_LINK_OFFSET = 600.0  # Web Mercator meters
+# The whole region, and a zoom on central Chicago (longitude, latitude, half width)
+MAP_PANELS = [
+    ("Chicago region", None),
+    ("Central Chicago", (-87.68, 41.87, 25_000)),
+]
 
 
 def main(args):
-    links = utils.read_tntp_network(INPUT_DIR / "SiouxFalls_net.tntp")
-    n_zones = utils.read_n_zones(INPUT_DIR / "SiouxFalls_net.tntp")
-    trips = utils.read_tntp_trips(INPUT_DIR / "SiouxFalls_trips.tntp")
-    nodes = utils.read_tntp_nodes(INPUT_DIR / "SiouxFalls_node.tntp")
-    ue_flows = utils.read_tntp_flows(INPUT_DIR / "SiouxFalls_flow.tntp")
+    links = utils.read_tntp_network(INPUT_DIR / "ChicagoSketch_net.tntp")
+    n_zones = utils.read_n_zones(INPUT_DIR / "ChicagoSketch_net.tntp")
+    trips = utils.read_tntp_trips(INPUT_DIR / "ChicagoSketch_trips.tntp")
+    nodes = utils.read_tntp_nodes(INPUT_DIR / "ChicagoSketch_node.tntp")
+    ue_flows = utils.read_tntp_flows(INPUT_DIR / "ChicagoSketch_flow.tntp")
     logging.info(
         f"Loaded {links.height} links, {n_zones} zones and "
         f"{trips['trips'].sum():.0f} trips per hour."
     )
 
-    # Every node is a zone, and paths may go through the zones
+    # The network file marks every node as a through node, but the benchmark equilibrium
+    # routes no traffic through the zones: paths may not cross them
     utils.build_inputs(
         OUTPUT_DIR,
         links,
@@ -50,7 +57,7 @@ def main(args):
         n_zones,
         length_unit=LENGTH_UNIT,
         centroid_offset=CENTROID_OFFSET,
-        crossable_zones=True,
+        crossable_zones=False,
     )
     utils.simulation(
         OUTPUT_DIR,
@@ -73,15 +80,15 @@ def main(args):
         nodes,
         NODES_CRS,
         link_offset=MAP_LINK_OFFSET,
-        line_widths=(1.0, 6.0),
+        panels=MAP_PANELS,
     )
 
 
 if __name__ == "__main__":
-    # The demand only fits within the link capacities over about 2 hours
+    # The network carries the hourly demand in about one hour
     args = utils.parse_args(
-        "Compare simulated and user-equilibrium link flows on Sioux Falls.",
-        insertion_hours=2.0,
+        "Compare simulated and user-equilibrium link flows on Chicago sketch.",
+        insertion_hours=1.0,
         hours=5,
     )
     OUTPUT_DIR.mkdir(exist_ok=True)
