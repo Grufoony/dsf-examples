@@ -26,15 +26,15 @@ def simulation(time_unit, vehicles_to_insert, out):
     # Set global mean vehicle length
     mobility.Street.setMeanVehicleLength(8.0)
 
-    # Add nodes (0..4)
-    for nid in range(5):
-        graph.addNode(nid)
-
-    # Add streets (id, source, target, length, maxSpeed, nLanes)
+    # Add streets (id, source, target, length, maxSpeed, nLanes, name).
+    # Missing endpoints are created as intersections (nodes 0..5)
     graph.addStreet(1, 0, 1, 2281.0, 13.9, 2, "")
     graph.addStreet(7, 1, 2, 118.0, 13.9, 2, "")
     graph.addStreet(13, 2, 3, 222.0, 13.9, 2, "")
     graph.addStreet(19, 3, 4, 651.0, 13.9, 2, "")
+    # Sink street: agents leave the network at the end of their destination street
+    # without queueing, so the destination must lie beyond traffic light 4
+    graph.addStreet(25, 4, 5, 50.0, 13.9, 2, "")
 
     # Create traffic lights on nodes 1..4 and set cycles
     graph.makeTrafficLight(1)
@@ -59,12 +59,12 @@ def simulation(time_unit, vehicles_to_insert, out):
 
     graph.adjustNodeCapacities()
     graph.addCoil(19)
-    coil = graph.edge(19)
 
-    # Create dynamics
-    dynamics = mobility.Dynamics(graph, False, 69)
-    dynamics.setODs([(0, 4, 1.0)])
-    dynamics.updatePaths()
+    # Create dynamics (the network is moved into it)
+    dynamics = mobility.Dynamics(graph, seed=69)
+    coil = dynamics.graph().edge(19)
+    # OD ids are street ids in the default EDGES mode: street 1 (0->1) -> street 25 (4->5)
+    dynamics.setODs([(1, 25, 1.0)])
 
     it_index = 0
     df = pl.DataFrame(
@@ -100,8 +100,8 @@ def simulation(time_unit, vehicles_to_insert, out):
                 else 0
             )
             if n > 0:
-                # Use uniform insertion assigning the itinerary id (4)
-                dynamics.addAgentsUniformly(n, 4)
+                # Insert agents at the corridor entrance (origin street 1)
+                dynamics.addAgents(n, mobility.AgentInsertionMethod.ODS)
                 added_vehicles += n
         dynamics.evolve()
 
