@@ -270,6 +270,7 @@ def plot_spread(results, sigmas, n_agents, path: Path):
         ax.grid(alpha=0.3)
         ax.legend()
     fig.savefig(path)
+    fig.savefig(path.with_suffix(".png"), dpi=150)
     plt.close(fig)
 
 
@@ -278,13 +279,12 @@ def main(
     distance_cost: float = 0.1,
     sigmas: tuple[float, ...] = (0.0, 0.1, 0.3, 0.6),
     n_agents: int = 500,
-    seed: int = 13156,
+    seed: int = 4269,
 ):
     if not (INPUT_DIR / "edges.geojson").exists():
-        logging.error(
+        raise FileNotFoundError(
             f"Edges GeoJSON file not found in {INPUT_DIR}. Please run the 0_cartography script first."
         )
-        return
     edges = gpd.read_file(INPUT_DIR / "edges.geojson").set_index("id")
 
     road_network = RoadNetwork()
@@ -308,7 +308,7 @@ def main(
 
     min_lon, min_lat, max_lon, max_lat = edges.total_bounds
     fmap = folium.Map(
-        location=[(min_lat + max_lat) / 2, (min_lon + max_lon) / 2], zoom_start=14
+        location=[(min_lat + max_lat) / 2, (min_lon + max_lon) / 2], zoom_start=12
     )
     layers = map_spread(edges, results, fmap)
     # The map opens on the noiseless best route of the chosen weight
@@ -361,9 +361,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--seed",
-        help="The random seed to use (default: 69).",
+        help="The random seed to use (default: 4269).",
         type=int,
-        default=69,
+        default=4269,
     )
     args = parser.parse_args()
     OUTPUT_DIR.mkdir(exist_ok=True)

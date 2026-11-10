@@ -8,10 +8,10 @@ The goal is to show the effect of traffic lights on the vehicle flow.
 
 from pathlib import Path
 
-from dsf import mobility
-from matplotlib import pyplot as plt
 import polars as pl
 import tqdm
+from dsf import mobility
+from matplotlib import pyplot as plt
 
 INPUT_DIR = Path("input")
 OUTPUT_DIR = Path("output")
@@ -77,7 +77,7 @@ def simulation(time_unit, vehicles_to_insert, out):
 
     added_vehicles = 0
 
-    for progress in tqdm.tqdm(range(0, MAX_TIME), desc="Simulating"):
+    for progress in tqdm.tqdm(range(MAX_TIME), desc="Simulating"):
         if progress % 60 == 0:
             if progress != 0:
                 it_index += 1
@@ -126,6 +126,7 @@ def plot(output_file):
     plt.grid(ls="--", alpha=0.7)
     plt.tight_layout()
     plt.savefig(OUTPUT_DIR / "flow_comparison.pdf")
+    plt.savefig(OUTPUT_DIR / "flow_comparison.png", dpi=150)
 
 
 def main():

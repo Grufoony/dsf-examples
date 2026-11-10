@@ -10,3 +10,16 @@ dependencies = [
     "polars>=1.41.1",
     "tqdm>=4.67.3",
 ]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.7.0",
+    "ruff>=0.17.4",
+]
+
+[tool.ruff]
+extend-exclude = ["toy_models/TransportationNetworks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "PIE"]
+ignore = ["E501"]
