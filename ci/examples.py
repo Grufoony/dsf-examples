@@ -150,6 +150,10 @@ def check_forbidden_turns(example: Example):
 def check_path_randomness(example: Example):
     routes = count_in_html(example, "path_randomness.html", "L.polyline.antPath(")
     ensure(routes > 0, "the map draws no route")
+    ensure(
+        count_in_html(example, "path_randomness.html", "route-cost-inset") > 0,
+        "the map has no route cost inset",
+    )
     return f"{routes} routes drawn"
 
 
